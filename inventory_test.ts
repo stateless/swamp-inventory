@@ -1,7 +1,7 @@
 /**
  * Unit tests for `@stateless/inventory` schemas — the validation surface that
  * guarantees a uniform core across granularities and straightforward facet
- * extension.
+ * extension. Examples use neutral placeholders only.
  *
  * @module
  */
@@ -12,14 +12,14 @@ import {
   FacetsSchema,
   GlobalArgsSchema,
   PruneArgsSchema,
-} from "./inventory.ts";
+} from "./schemas.ts";
 
 Deno.test("core-only atomic item parses; component/relation default to []", () => {
   const plug = DeviceSchema.parse({
-    id: "tapo-desk-1",
-    name: "Desk Tapo P110M",
+    id: "plug-1",
+    name: "Smart plug",
     kind: "smartplug",
-    purpose: "Meter the main desktop's power draw",
+    purpose: "Meter a workstation's power draw",
   });
   assertEquals(plug.components, []);
   assertEquals(plug.relations, []);
@@ -33,13 +33,13 @@ Deno.test("composite system carries rich components + relations", () => {
     kind: "host",
     purpose: "Virtualisation node",
     components: [
-      { type: "cpu", spec: "8c/16t" },
-      { type: "ram", spec: "16 GB DDR4", qty: 2 },
-      { type: "disk", spec: "2 TB NVMe", ref: "disk-host-1-nvme0" },
+      { type: "cpu", spec: "N-core CPU" },
+      { type: "ram", spec: "RAM", qty: 2 },
+      { type: "disk", spec: "NVMe SSD", ref: "disk-host-1-nvme0" },
     ],
     relations: [
       { rel: "fedBy", target: "ups-1" },
-      { rel: "hosts", target: "guest-mail" },
+      { rel: "hosts", target: "guest-1" },
     ],
   });
   assertEquals(host.components.length, 3);
@@ -103,7 +103,7 @@ Deno.test("open vocabularies: novel kind and relation are accepted", () => {
 Deno.test("invalid id slug is rejected", () => {
   assertThrows(() =>
     DeviceSchema.parse({
-      id: "Tapo Desk 1", // spaces + uppercase
+      id: "Plug One", // spaces + uppercase
       name: "x",
       kind: "smartplug",
       purpose: "y",

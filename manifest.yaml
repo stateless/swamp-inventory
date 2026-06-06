@@ -1,6 +1,6 @@
 manifestVersion: 1
 name: "@stateless/inventory"
-version: "2026.06.06.2"
+version: "2026.06.06.3"
 description: >-
   A neutral, extensible fleet inventory record — the foundational "what exists
   and its declared attributes" model. Uniform core (id, purpose, components,
