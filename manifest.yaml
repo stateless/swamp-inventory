@@ -1,12 +1,12 @@
 manifestVersion: 1
 name: "@stateless/inventory"
-version: "2026.06.06.3"
+version: "2026.06.09.1"
 description: >-
   A neutral, extensible fleet inventory record — the foundational "what exists
   and its declared attributes" model. Uniform core (id, purpose, components,
   relations) across atomic and composite items, with an open facet seam
-  (access, power, network, config, management, + custom) so new dimensions layer
-  on without schema changes. Declarative: `apply` materialises one CEL-queryable
+  (access, power, network, config, management, firmware, interfaces, + custom)
+  so new dimensions layer on without schema changes. Declarative: `apply` materialises one CEL-queryable
   `device` resource per id; `prune` soft-retires undeclared devices (status
   change, not deletion — version history preserves the lifecycle trend).
   Consumer abstractions (telemetry, management, config-drift) depend on it; it

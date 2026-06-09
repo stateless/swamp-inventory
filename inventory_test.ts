@@ -75,17 +75,63 @@ Deno.test("full facets parse; access ref is preserved (redaction is swamp's job)
 Deno.test("unknown facet passes through (the extension seam)", () => {
   const facets = FacetsSchema.parse({
     power: { ratedW: 900 },
-    // a facet that does not yet have a typed schema:
-    firmware: { version: "1.2.3", channel: "stable" },
+    // a facet that does not yet have a typed schema (e.g. a future consumer):
+    changelog: [{ at: "2026-01-01", change: "commissioned" }],
   });
   // Known facet typed:
   assertEquals(facets.power?.ratedW, 900);
   // Unknown facet retained verbatim:
-  const fw = (facets as Record<string, unknown>).firmware as Record<
-    string,
-    unknown
+  const log = (facets as Record<string, unknown>).changelog as Array<
+    Record<string, unknown>
   >;
-  assertEquals(fw.version, "1.2.3");
+  assertEquals(log[0].change, "commissioned");
+});
+
+Deno.test("firmware facet: os/bios/bmc + open component, vendor+product required", () => {
+  const facets = FacetsSchema.parse({
+    firmware: {
+      os: { vendor: "Proxmox", product: "Proxmox VE", version: "8.4" },
+      bios: {
+        vendor: "Supermicro",
+        product: "H13SAE-MF",
+        version: "2.6",
+        releaseDate: "2026-01-21",
+      },
+      // open component beyond os/bios/bmc — still validated as a firmware entry:
+      cpld: { vendor: "Lattice", product: "MachXO" },
+    },
+  });
+  assertEquals(facets.firmware?.os?.version, "8.4");
+  assertEquals(facets.firmware?.bios?.releaseDate, "2026-01-21");
+  // vendor + product are required (so a checker can resolve the upstream feed):
+  assertThrows(() =>
+    FacetsSchema.parse({ firmware: { os: { product: "RouterOS" } } })
+  );
+  // an open firmware component must also be a full entry, not a bare string:
+  assertThrows(() =>
+    FacetsSchema.parse({ firmware: { routeros: "7.22" } })
+  );
+});
+
+Deno.test("interfaces facet: NIC list with mac + physical uplink", () => {
+  const facets = FacetsSchema.parse({
+    interfaces: [
+      {
+        name: "eno1",
+        mac: "00:11:22:33:44:55",
+        speed: "1GbE",
+        role: "LAN1 → bridge0",
+      },
+      { name: "nic", mac: "00:aa:bb:cc:dd:ee", uplink: { device: "switch-1", port: 47 } },
+    ],
+  });
+  assertEquals(facets.interfaces?.length, 2);
+  assertEquals(facets.interfaces?.[1].uplink?.device, "switch-1");
+  assertEquals(facets.interfaces?.[1].uplink?.port, 47);
+  // name is required on each interface:
+  assertThrows(() =>
+    FacetsSchema.parse({ interfaces: [{ mac: "00:11:22:33:44:55" }] })
+  );
 });
 
 Deno.test("open vocabularies: novel kind and relation are accepted", () => {

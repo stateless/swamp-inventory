@@ -41,7 +41,27 @@ different shape.
 | `name`, `kind`, `purpose` | Identity (`kind` is an open vocabulary: `host \| switch \| router \| ups \| pdu \| smartplug \| nas \| …`) |
 | `components[]` | A device's moving parts (`{ type, spec, qty?, ref? }`) — `ref` promotes a part to its own item |
 | `relations[]` | The item's place in the larger system (`{ rel, target }`: `fedBy \| meters \| hosts \| uplinkTo \| …`) |
-| `facets` | Optional, layered dimensions — `access`, `power`, `network`, `config`, `management`, plus any custom |
+| `facets` | Optional, layered dimensions — `access`, `power`, `network`, `config`, `management`, `firmware`, `interfaces`, plus any custom |
+
+### Facets by rate-of-change
+
+Facets double as the **scoping unit**: a consumer reads only the slice it needs,
+so the boundary that decides *"how often does this change / get re-verified"* is
+also the query boundary. Roughly:
+
+| Tier | Rate | Facets |
+| --- | --- | --- |
+| identity | static (verify on physical change) | core fields + `components` |
+| firmware / cabling | occasional (scheduled check) | `firmware`, `interfaces` |
+| os / network / config | frequent (drift target) | `config`, `network` |
+
+- **`firmware`** — version-tracked components (`os`, `bios`, `bmc`, … open) as
+  `{ vendor, product, version?, releaseDate?, eol?, channel? }`. `vendor` +
+  `product` are required so a scheduled **release-currency** check can resolve the
+  upstream feed and flag "update available / behind / EOL".
+- **`interfaces`** — network interfaces + physical cabling:
+  `{ name, mac?, speed?, role?, spec?, uplink?: { device, port } }`. `uplink`
+  ties a NIC to the device/port it plugs into.
 
 ## Usage
 
@@ -86,6 +106,11 @@ globalArguments:
         network:
           addresses:
             - { kind: ipv4, value: "203.0.113.10" }
+        firmware:
+          os: { vendor: Debian, product: Debian, version: "12" }
+          bios: { vendor: ExampleCorp, product: "MB-X1", version: "2.6", releaseDate: "2026-01-21" }
+        interfaces:
+          - { name: eth0, mac: "00:00:5e:00:53:01", speed: "1GbE", uplink: { device: switch-1, port: 12 } }
 
     - id: plug-1
       name: Smart plug

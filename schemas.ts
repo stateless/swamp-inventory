@@ -108,6 +108,66 @@ export const ManagementFacetSchema = z.object({
 }).catchall(z.unknown());
 
 /**
+ * One version-tracked firmware/OS component — the release-currency input.
+ * `vendor` + `product` are required so a scheduled checker can resolve the
+ * upstream release feed; the rest is what to compare against it.
+ */
+export const FirmwareEntrySchema = z.object({
+  vendor: z.string().min(1).describe(
+    "Who ships it — Supermicro | MikroTik | Proxmox | Ubiquiti | Canonical | …",
+  ),
+  product: z.string().min(1).describe(
+    "Product the version applies to — 'Proxmox VE', 'RouterOS', 'H13SAE-MF'.",
+  ),
+  version: z.string().optional().describe("Running version/build."),
+  releaseDate: z.string().optional().describe(
+    "When the running version was released (ISO date preferred) — for currency checks.",
+  ),
+  eol: z.string().optional().describe(
+    "End-of-life date/marker for the running version or series.",
+  ),
+  channel: z.string().optional().describe(
+    "Release channel/train, if relevant — stable | LTS | no-subscription | …",
+  ),
+}).catchall(z.unknown());
+export type FirmwareEntry = z.infer<typeof FirmwareEntrySchema>;
+
+/**
+ * Version-tracked firmware/OS for a device — the occasional-change tier read by
+ * the release-currency consumer. Known slots (os/bios/bmc) are typed; any other
+ * component (routeros, uefi, cpld, …) passes through as the same entry shape.
+ */
+export const FirmwareFacetSchema = z.object({
+  os: FirmwareEntrySchema.optional(),
+  bios: FirmwareEntrySchema.optional(),
+  bmc: FirmwareEntrySchema.optional(),
+}).catchall(FirmwareEntrySchema);
+
+/** A network interface + its physical cabling (NIC ↔ mac ↔ switch-port). */
+export const InterfaceSchema = z.object({
+  name: z.string().min(1).describe(
+    "Interface name — eno1 | enp35s0 | wifi | bmc | …",
+  ),
+  mac: z.string().optional().describe("MAC address."),
+  speed: z.string().optional().describe("Link speed, e.g. '1GbE', '10GbE'."),
+  role: z.string().optional().describe(
+    "What this NIC is for / its bridge or subnet mapping.",
+  ),
+  spec: z.string().optional().describe("Hardware spec, e.g. 'Intel I210 GbE'."),
+  uplink: z.object({
+    device: z.string().min(1).describe(
+      "Device id this NIC plugs into (e.g. a switch).",
+    ),
+    port: z.union([z.string(), z.number()]).optional().describe(
+      "Port/label on the uplink device.",
+    ),
+  }).catchall(z.unknown()).optional().describe(
+    "Physical cabling — what this NIC connects to.",
+  ),
+}).catchall(z.unknown());
+export type Interface = z.infer<typeof InterfaceSchema>;
+
+/**
  * The facet map. Known facets are typed; unknown facets pass through
  * (`.catchall`) so a new dimension can be layered on with no schema surgery.
  */
@@ -116,9 +176,15 @@ export const FacetsSchema = z.object({
   power: PowerFacetSchema.optional(),
   network: NetworkFacetSchema.optional(),
   config: z.record(z.string(), z.unknown()).optional().describe(
-    "Declared/desired config — the drift consumer reads this.",
+    "Declared/desired config (frequent-change tier) — the drift consumer reads this.",
   ),
   management: ManagementFacetSchema.optional(),
+  firmware: FirmwareFacetSchema.optional().describe(
+    "Version-tracked firmware/OS (os/bios/bmc/…) — the release-currency consumer reads this.",
+  ),
+  interfaces: z.array(InterfaceSchema).optional().describe(
+    "Network interfaces + physical cabling (NIC ↔ mac ↔ switch-port).",
+  ),
 }).catchall(z.unknown());
 export type Facets = z.infer<typeof FacetsSchema>;
 

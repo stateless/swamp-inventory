@@ -106,7 +106,7 @@ interface MethodResult {
 /** The `@stateless/inventory` model definition. */
 export const model = {
   type: "@stateless/inventory",
-  version: "2026.06.06.3",
+  version: "2026.06.09.1",
   globalArguments: GlobalArgsSchema,
   resources: {
     device: {
